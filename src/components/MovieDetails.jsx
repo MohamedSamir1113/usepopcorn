@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Loader from "./Loader";
 import StarRating from "./StarRating";
 const KEY = "b09c1b1b";
 function MovieDetails({ selectedId, handleCloseMovie, onAdd, watched }) {
   const [selectedMovie, setSelectedMovie] = useState({});
- ;
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState("");
   const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
-  const currentRating=watched.find(movie=>movie.imdbID===selectedId)?.userRating
+  const currentRating = watched.find(
+    (movie) => movie.imdbID === selectedId
+  )?.userRating;
 
   const {
     Title: title,
@@ -23,7 +24,22 @@ function MovieDetails({ selectedId, handleCloseMovie, onAdd, watched }) {
     Genre: genre,
   } = selectedMovie;
 
- 
+  const countRef=useRef([])
+  function handleAdd() {
+    const watchedMovie = {
+      imdbID: selectedId,
+      title,
+      year,
+      poster,
+      imdbRating: Number(imdbRating),
+      runtime: Number(runtime.split(" ").at(0)),
+      userRating,
+      countRatingDecisions:countRef.current
+    };
+    onAdd(watchedMovie);
+    console.log(watchedMovie);
+  }
+
   useEffect(
     function () {
       async function showSelectedMovie() {
@@ -42,32 +58,39 @@ function MovieDetails({ selectedId, handleCloseMovie, onAdd, watched }) {
     },
     [selectedId]
   );
- 
 
-  useEffect(function () 
-  {
-   if(!title) return
-    document.title=`Movie: ${title}`
-
-    return function () {
-      document.title="usePopcorn"
-      console.log(`clan up of the movie: ${title}`);
-    } //cleanup function to clean the effect after the component unmount
-  },[title])
-
-  function handleAdd() {
-    const watchedMovie = {
-      imdbID: selectedId,
-      title,
-      year,
-      poster,
-      imdbRating: Number(imdbRating),
-      runtime: Number(runtime.split(" ").at(0)),
-      userRating,
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.code === "KeyD") {
+        handleCloseMovie();
+        console.log("close");
+      }
+    }
+  
+    document.addEventListener("keydown", handleKeyDown);
+  
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
     };
-    onAdd(watchedMovie);
-  }
+  }, [handleCloseMovie]);
+  
+  useEffect(
+    function () {
+      if (!title) return;
+      document.title = `Movie: ${title}`;
 
+      return function () {
+        document.title = "usePopcorn";
+        // console.log(`clan up of the movie: ${title}`);
+      }; //cleanup function to clean the effect after the component unmount
+    },
+    [title]
+  );
+
+  useEffect(function() {
+   if(userRating) countRef.current.push(userRating)
+  },[userRating])
+  
   return (
     <>
       {!isLoading && (
@@ -97,6 +120,7 @@ function MovieDetails({ selectedId, handleCloseMovie, onAdd, watched }) {
                   <StarRating
                     rating={userRating}
                     onSetRating={setUserRating}
+
                     size={24}
                     maxRating={10}
                   />
@@ -119,8 +143,6 @@ function MovieDetails({ selectedId, handleCloseMovie, onAdd, watched }) {
         </div>
       )}
       {isLoading && <Loader />}
-
-     
     </>
   );
 }
